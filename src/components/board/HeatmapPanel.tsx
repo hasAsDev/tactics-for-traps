@@ -6,8 +6,7 @@ import { Sprite } from "@/components/pixel/Sprite";
 import { LEVEL_PIECES } from "@/game/art/board";
 import { METRICS, type Metric } from "@/game/core/intensity";
 import { boardLevels, sliceBoard, type BoardDTO } from "@/game/world";
-import { formatDate, formatNumber } from "@/lib/format";
-import { bigValue, dateOf, describeDay, legendRanges, METRIC_LABELS } from "./day-text";
+import { bigValue, describeDay, legendRanges, METRIC_LABELS, metricSummary } from "./day-text";
 import { YearGrid } from "./YearGrid";
 
 const RECENT_WEEKS = 12;
@@ -43,18 +42,7 @@ export function HeatmapPanel({ board, todayIso }: HeatmapPanelProps) {
   const board3d = useMemo(() => (wide ? board : sliceBoard(board, RECENT_WEEKS)), [board, wide]);
   const offset = (board.weeks - board3d.weeks) * 7;
 
-  const summary = useMemo(() => {
-    let active = 0;
-    let total = 0;
-    let best = -1;
-    for (let d = 0; d <= board.todayIndex; d++) {
-      const p = board.points[d] ?? 0;
-      if (levels[d] > 0) active++;
-      total += p;
-      if (best < 0 || p > (board.points[best] ?? 0)) best = d;
-    }
-    return { active, total, best };
-  }, [board, levels]);
+  const summary = useMemo(() => metricSummary(board, metric), [board, metric]);
 
   const showGrid = view === "grid" || failed;
   const cardIndex = selected ?? board.todayIndex;
@@ -110,10 +98,7 @@ export function HeatmapPanel({ board, todayIso }: HeatmapPanelProps) {
       </div>
 
       <p className="text-body-sm text-mist" aria-live="polite">
-        {formatNumber(summary.active)} ngày hoạt động · {formatNumber(summary.total)} điểm
-        {summary.best >= 0 && (board.points[summary.best] ?? 0) > 0 && (
-          <> · ngày cao nhất {formatNumber(board.points[summary.best])} điểm ({formatDate(dateOf(board, summary.best))})</>
-        )}
+        {summary}
       </p>
 
       <div className="panel-felt relative overflow-hidden">

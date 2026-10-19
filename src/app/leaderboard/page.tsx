@@ -32,7 +32,8 @@ async function Leaderboard({ searchParams }: { searchParams: PageProps<"/leaderb
   const tab: LeaderboardTab = query.tab === "week" || query.tab === "xp" ? query.tab : "streak";
   const today = await siteToday();
   const rows = sortMembers(await getMembers(today), tab);
-  const rankColor = ["text-gold-300", "text-ivory", "text-wood-400"];
+  /** Huy chương vàng / bạc / đồng cho ba hạng đầu (chữ mực trên nền màu, đọc rõ trên giấy). */
+  const medal = ["bg-gold-500", "bg-mist", "bg-wood-400"];
 
   return (
     <>
@@ -71,8 +72,14 @@ async function Leaderboard({ searchParams }: { searchParams: PageProps<"/leaderb
             <tbody>
               {rows.map((r, i) => (
                 <tr key={r.username} className="border-b-2 border-paper-line">
-                  <td className={`py-2 pr-2 ${rankColor[i] ? "font-display text-ui [text-shadow:0_2px_0_var(--color-ink)]" : ""} ${rankColor[i] ?? ""}`}>
-                    {i + 1}
+                  <td className="py-2 pr-2">
+                    {medal[i] ? (
+                      <span className={`frame inline-flex h-8 w-8 items-center justify-center font-display text-ui leading-none text-ink ${medal[i]}`}>
+                        {i + 1}
+                      </span>
+                    ) : (
+                      <span className="inline-flex w-8 justify-center">{i + 1}</span>
+                    )}
                   </td>
                   <td className="px-2">
                     <Link href={`/u/${r.username}`} className="flex items-center gap-2">

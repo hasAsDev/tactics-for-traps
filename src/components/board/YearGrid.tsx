@@ -90,7 +90,14 @@ export function YearGrid({ board, levels, todayIso, selected, onSelect, mode }: 
         <tbody>
           {WEEKDAYS_SHORT.map((label, row) => (
             <tr key={label}>
-              <th scope="row" className={visible ? "sticky left-0 bg-felt-900 pr-1 text-left text-body-sm text-mist" : ""}>
+              <th
+                scope="row"
+                className={
+                  visible
+                    ? "sticky left-0 bg-felt-900 pr-1 text-left font-body text-[0.875rem] leading-3 font-normal text-mist md:leading-[14px]"
+                    : ""
+                }
+              >
                 {label}
               </th>
               {weeks.map((w) => {
@@ -114,17 +121,19 @@ export function YearGrid({ board, levels, todayIso, selected, onSelect, mode }: 
                         : undefined
                     }
                     onClick={future ? undefined : () => onSelect(d)}
-                    className={
-                      visible
-                        ? [
-                            "h-3 w-3 p-0 md:h-[14px] md:w-[14px]",
-                            future ? "outline-dotted outline-1 outline-wood-800" : `${HEAT_BG[level]} cursor-pointer`,
-                            info?.isToday ? "shadow-[inset_0_0_0_2px_var(--color-gold-300)]" : "",
-                            isSelected ? "outline-2 outline-sky-300" : "",
-                          ].join(" ")
-                        : ""
-                    }
-                  />
+                    className={visible ? `p-0 ${isSelected ? "outline-2 outline-sky-300" : ""} ${future ? "" : "cursor-pointer"}` : ""}
+                  >
+                    {visible && (
+                      <span
+                        aria-hidden
+                        className={[
+                          "block h-3 w-3 md:h-[14px] md:w-[14px]",
+                          future ? "outline-1 -outline-offset-1 outline-dotted outline-wood-800" : HEAT_BG[level],
+                          info?.isToday ? "shadow-[inset_0_0_0_2px_var(--color-gold-300)]" : "",
+                        ].join(" ")}
+                      />
+                    )}
+                  </td>
                 );
               })}
             </tr>

@@ -54,6 +54,9 @@ export function createWorld(parent: HTMLElement, state: WorldState, events: Worl
       game.loop.wake();
     },
     destroy() {
+      // destroy() của Phaser chỉ chạy ở step kế tiếp: nếu vòng lặp đang ngủ (bàn cờ ngoài màn hình)
+      // thì phải đánh thức, nếu không game (và WebGL context) sẽ không bao giờ được giải phóng.
+      game.loop.wake();
       game.destroy(true);
     },
   };

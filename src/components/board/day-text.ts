@@ -1,5 +1,5 @@
 import type { Metric } from "@/game/core/intensity";
-import { THRESHOLDS } from "@/game/core/intensity";
+import { metricActive, metricValue, THRESHOLDS } from "@/game/core/intensity";
 import { addDays } from "@/game/core/time";
 import { dayTotalsAt, type BoardDTO } from "@/game/world";
 import { dayLabel, formatNumber } from "@/lib/format";
@@ -38,6 +38,9 @@ export function describeDay(board: BoardDTO, index: number, todayIso: string) {
 
 export function bigValue(board: BoardDTO, index: number, metric: Metric): string {
   const t = dayTotalsAt(board, index);
+  if (metric !== "total" && !metricActive(t, metric)) {
+    return metric === "puzzle" ? "Không giải puzzle" : `Không chơi ${METRIC_LABELS[metric]}`;
+  }
   switch (metric) {
     case "total":
       return `${formatNumber(board.points[index] ?? 0)} điểm`;
@@ -57,4 +60,34 @@ export function legendRanges(metric: Metric): string[] {
   const t = THRESHOLDS[metric];
   const starts = [1, ...t];
   return starts.map((start, i) => (i === starts.length - 1 ? `${start}+` : `${start}–${starts[i + 1] - 1}`));
+}
+
+/** Dòng tóm tắt phía trên bàn cờ, tính theo tab đang chọn. */
+export function metricSummary(board: BoardDTO, metric: Metric): string {
+  let active = 0;
+  let sum = 0;
+  let best = -1;
+  let bestValue = 0;
+  for (let d = 0; d <= board.todayIndex; d++) {
+    const t = dayTotalsAt(board, d);
+    if (!metricActive(t, metric)) continue;
+    const value = metricValue(t, metric);
+    active++;
+    sum += value;
+    if (value > bestValue) {
+      bestValue = value;
+      best = d;
+    }
+  }
+  const at = best >= 0 ? ` (${dateOf(board, best).split("-").reverse().join("/")})` : "";
+  switch (metric) {
+    case "total":
+      return `${formatNumber(active)} ngày hoạt động · ${formatNumber(sum)} điểm${best >= 0 ? ` · ngày cao nhất ${formatNumber(bestValue)} điểm${at}` : ""}`;
+    case "puzzle":
+      return `${formatNumber(active)} ngày giải puzzle · ${formatNumber(sum)} câu đúng${best >= 0 ? ` · nhiều nhất ${formatNumber(bestValue)} câu${at}` : ""}`;
+    default:
+      return active === 0
+        ? `Chưa có lượt ${METRIC_LABELS[metric]} nào trong 12 tháng qua.`
+        : `${formatNumber(active)} ngày chơi ${METRIC_LABELS[metric]} · kỷ lục ${formatNumber(bestValue)}${at}`;
+  }
 }
