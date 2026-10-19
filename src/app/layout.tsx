@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { MobileTabBar } from "@/components/shell/MobileTabBar";
 import { SiteHeader } from "@/components/shell/SiteHeader";
+import { SyncPing } from "@/components/shell/SyncPing";
 import { FRAMES_CSS } from "@/lib/pixel/frames";
 import { handjet, vt323 } from "./fonts";
 import "./globals.css";
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Dữ liệu puzzle từ Lichess.org. Không liên kết chính thức với Lichess.
         </footer>
         <MobileTabBar />
+        <SyncPing />
       </body>
     </html>
   );
