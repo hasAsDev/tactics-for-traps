@@ -58,14 +58,24 @@ Ngày của site dùng chung múi giờ `Asia/Ho_Chi_Minh`. Puzzle Streak/Storm/
 
 ## Deploy (chỉ dùng gói miễn phí)
 
-1. Đẩy code lên một repo GitHub **cá nhân** (nên để public).
-2. Vercel → Add New Project → import repo (giữ Fluid compute bật; region đã đặt `sin1` trong `vercel.json`).
-3. Storage → Neon (Free, AWS Singapore, Postgres 17), chỉ gắn Production. Trong Neon console đặt autoscaling cố định 0,25 CU.
-4. Biến môi trường Production: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (vd `https://tactics-for-traps.vercel.app`), `TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `LICHESS_CLIENT_ID=tactics-for-traps`. (`DATABASE_URL`, `DATABASE_URL_UNPOOLED` do Neon thêm.) Tuỳ chọn: `SIGNUP_DISABLED=1` hoặc `SIGNUP_INVITE_CODE` nếu bị spam.
-5. Deploy. Build tự chạy migration (`scripts/migrate.mjs`, chỉ khi `VERCEL_ENV=production`).
-6. Thử: đăng ký → kết nối Lichess → xem bàn cờ; Settings → Cron Jobs → Run.
+1. **Tạo secret cho production** (khác với secret local):
+   ```bash
+   node -e "const c=require('crypto');console.log('BETTER_AUTH_SECRET='+c.randomBytes(32).toString('base64url'));console.log('TOKEN_ENCRYPTION_KEY='+c.randomBytes(32).toString('base64'));console.log('CRON_SECRET='+c.randomBytes(24).toString('base64url'))"
+   ```
+   Không đổi `TOKEN_ENCRYPTION_KEY` sau khi đã có người kết nối Lichess (token cũ sẽ không giải mã được, mọi người phải kết nối lại).
+2. **GitHub:** tạo repo trên tài khoản **cá nhân** (Hobby không deploy được repo của organization; nên để public), rồi đẩy code:
+   ```bash
+   git remote add origin https://github.com/<tài-khoản>/tactics-for-traps.git
+   git push -u origin master
+   ```
+3. **Vercel:** Add New → Project → Import repo. Tên project quyết định domain `https://<tên>.vercel.app`. Ở mục Environment Variables, thêm `BETTER_AUTH_SECRET`, `TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `BETTER_AUTH_URL=https://<tên>.vercel.app` và `LICHESS_CLIENT_ID=tactics-for-traps`, rồi bấm Deploy. Lần build đầu sẽ dừng với thông báo thiếu `DATABASE_URL`: bình thường, vì chưa có database.
+4. **Neon:** trong project Vercel, tab Storage → Create Database → Neon → gói **Free**, region **AWS Asia Pacific (Singapore)** → kết nối với môi trường Production. Neon tự thêm `DATABASE_URL` và `DATABASE_URL_UNPOOLED`.
+5. **Redeploy:** tab Deployments → bản mới nhất → Redeploy. Log build phải có dòng `[migrate] xong`.
+6. **Kiểm tra domain:** nếu tên bị trùng, Vercel sẽ thêm hậu tố vào domain. Khi đó sửa `BETTER_AUTH_URL` cho khớp domain production thật rồi Redeploy. Luôn mở web bằng domain này (OAuth Lichess và kiểm tra Origin dựa vào nó).
+7. **Tiết kiệm CU-giờ:** Neon console → branch `main` → Compute → Edit → min = max = 0,25 CU (scale-to-zero giữ mặc định).
+8. **Thử:** đăng ký → Kết nối Lichess → chờ khoảng 1 phút để nhập lịch sử. Settings → Cron Jobs → Run để thử cron.
 
-Giới hạn cần nhớ: Vercel Hobby chỉ dùng phi thương mại, cron 1 lần/ngày, log giữ 1 giờ (xem bảng `sync_run`). Neon Free 100 CU-giờ/tháng: `robots.txt` đã chặn bot tìm kiếm (trừ bot preview link).
+Giới hạn cần nhớ: Vercel Hobby chỉ dùng phi thương mại, cron 1 lần/ngày, log giữ 1 giờ (xem bảng `sync_run`). Neon Free 100 CU-giờ/tháng: `robots.txt` đã chặn bot tìm kiếm (trừ bot preview link). Tuỳ chọn khi bị spam: `SIGNUP_DISABLED=1` hoặc `SIGNUP_INVITE_CODE`.
 
 ## Lộ trình game
 
