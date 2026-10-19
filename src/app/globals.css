@@ -1,26 +1,369 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * "Thế giới bàn cờ": bàn cờ gỗ trên nỉ xanh, pixel art.
+ * Mã màu phải khớp với src/game/art/palette.ts (có test kiểm tra).
+ * 1 điểm ảnh art = 2 CSS px (--px).
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-felt-950: #08150f;
+  --color-felt-900: #0d2118;
+  --color-felt-800: #133024;
+  --color-felt-700: #1b4331;
+  --color-felt-600: #2a5c45;
+  --color-ink: #1a100a;
+  --color-wood-900: #3b2214;
+  --color-wood-800: #5c3720;
+  --color-wood-600: #8b5a32;
+  --color-wood-400: #b9824c;
+  --color-wood-200: #e2b97f;
+  --color-board-light: #f0d9b5;
+  --color-board-dark: #b58863;
+  --color-ivory: #f7eed8;
+  --color-paper: #eadcbc;
+  --color-paper-line: #c9b58c;
+  --color-ink-muted: #5b4636;
+  --color-mist: #a9c3b2;
+  --color-gold-300: #f9cf55;
+  --color-gold-500: #e9a930;
+  --color-ember-400: #ff8a70;
+  --color-ember-600: #a33022;
+  --color-sky-300: #80d4ff;
+  --color-leaf-400: #9fe07a;
+  --color-heat-1: #a46b38;
+  --color-heat-2: #c07f3a;
+  --color-heat-3: #d9953a;
+  --color-heat-4: #e9a930;
+  --color-heat-5: #f9cf55;
+  --color-heat-6: #fff3c4;
+  --color-cherry-300: #b8693a;
+  --color-cherry-500: #7d3f22;
+  --color-cherry-700: #4f2414;
+  --color-transparent: transparent;
+
+  /* Cỡ chữ "nét" cho font pixel (rem tính theo root 16px). */
+  --text-label: 1.0625rem;
+  --text-label--line-height: 1.3125rem;
+  --text-label--letter-spacing: 0.0625rem;
+  --text-body-sm: 1.25rem;
+  --text-body-sm--line-height: 1.625rem;
+  --text-body: 1.5625rem;
+  --text-body--line-height: 2.0625rem;
+  --text-ui: 2.125rem;
+  --text-ui--line-height: 2.5rem;
+  --text-title: 2.125rem;
+  --text-title--line-height: 2.75rem;
+  --text-stat: 4.25rem;
+  --text-stat--line-height: 4.75rem;
+
+  --shadow-px: 0 2px 0 0 var(--color-ink);
+  --shadow-sheet: 2px 2px 0 0 var(--color-ink);
+
+  --animate-blink: blink 1s steps(1, end) infinite;
+  --animate-spin-steps: spin-steps 0.8s steps(4, end) infinite;
+  --animate-bob: bob 0.8s steps(2, end) infinite;
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes spin-steps {
+    to {
+      rotate: 1turn;
+    }
+  }
+  @keyframes bob {
+    50% {
+      translate: 0 -2px;
+    }
   }
 }
 
+@theme inline {
+  --font-display: var(--font-handjet), ui-monospace, monospace;
+  --font-body: var(--font-vt323), ui-monospace, monospace;
+}
+
+:root {
+  --px: 2px;
+  --focus: var(--color-sky-300);
+  color-scheme: dark;
+}
+
+html {
+  scrollbar-color: var(--color-wood-600) var(--color-felt-900);
+  background-color: var(--color-felt-900);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  color: var(--color-ivory);
+  background-color: var(--color-felt-900);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/* Nỉ xanh + vignette phía sau nội dung. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 30%, transparent 55%, rgb(8 21 15 / 0.7) 100%),
+    var(--felt-texture) 0 0 / 16px 16px,
+    var(--color-felt-900);
+}
+
+:focus-visible {
+  outline: var(--px) solid var(--focus);
+  outline-offset: var(--px);
+}
+
+::selection {
+  background: var(--color-gold-500);
+  color: var(--color-ink);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .frame,
+  .btn,
+  .chip,
+  .input,
+  .panel-wood,
+  .panel-paper {
+    border-image: none !important;
+    border-color: CanvasText;
+  }
+}
+
+/* ---------- Tiện ích pixel ---------- */
+
+@utility pixelated {
+  image-rendering: pixelated;
+}
+
+/* `truncate` của Tailwind cắt mất dấu chồng tiếng Việt (Ấ, Ỗ…). */
+@utility truncate-vi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}
+
+@utility frame {
+  border: var(--px) solid transparent;
+  border-image: var(--frame-notch) 1 / var(--px) / 0 stretch;
+  background-clip: padding-box;
+}
+
+@utility panel-wood {
+  border: calc(var(--px) * 4) solid transparent;
+  border-image: var(--frame-wood) 4 / calc(var(--px) * 4) / 0 stretch;
+  background:
+    var(--felt-texture) 0 0 / 16px 16px padding-box,
+    var(--color-felt-800) padding-box;
+  box-shadow: 0 var(--px) 0 0 var(--color-felt-950);
+}
+
+@utility panel-felt {
+  background:
+    var(--felt-texture) 0 0 / 16px 16px,
+    var(--color-felt-900);
+  box-shadow:
+    inset 0 var(--px) 0 0 var(--color-felt-950),
+    inset 0 calc(var(--px) * -1) 0 0 var(--color-felt-700);
+}
+
+@utility panel-paper {
+  --focus: var(--color-ink);
+  border: calc(var(--px) * 2) solid transparent;
+  border-image: var(--frame-paper) 2 / calc(var(--px) * 2) / 0 stretch;
+  background: var(--color-paper) padding-box;
+  color: var(--color-ink);
+  box-shadow: var(--shadow-sheet);
+}
+
+@utility btn {
+  --face: var(--color-wood-400);
+  --hi: var(--color-wood-200);
+  --hi-hover: var(--color-ivory);
+  --lo: var(--color-wood-800);
+  --fg: var(--color-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--px) * 2);
+  min-height: 3.5rem;
+  padding: calc(var(--px) * 2 + 2px) calc(var(--px) * 8) calc(var(--px) * 4);
+  border: var(--px) solid transparent;
+  border-image: var(--frame-notch) 1 / var(--px) / 0 stretch;
+  background: var(--face) padding-box;
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+  text-decoration: none;
+  box-shadow:
+    inset 0 var(--px) 0 0 var(--hi),
+    inset 0 calc(var(--px) * -2) 0 0 var(--lo),
+    0 var(--px) 0 0 var(--color-ink);
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+  @media (hover: hover) {
+    &:hover {
+      --hi: var(--hi-hover);
+    }
+  }
+  &:active {
+    translate: 0 var(--px);
+    box-shadow:
+      inset 0 var(--px) 0 0 var(--lo),
+      inset 0 calc(var(--px) * -1) 0 0 var(--lo);
+  }
+  &:disabled,
+  &[aria-disabled="true"],
+  &[data-pending="true"] {
+    --face: var(--color-felt-700);
+    --hi: var(--color-felt-600);
+    --hi-hover: var(--color-felt-600);
+    --lo: var(--color-felt-800);
+    --fg: var(--color-mist);
+    cursor: not-allowed;
+    translate: none;
+  }
+}
+
+@utility btn-primary {
+  --face: var(--color-gold-500);
+  --hi: var(--color-gold-300);
+  --hi-hover: var(--color-heat-6);
+  --lo: var(--color-wood-600);
+  --fg: var(--color-ink);
+}
+
+@utility btn-danger {
+  --face: var(--color-ember-600);
+  --hi: var(--color-ember-400);
+  --hi-hover: var(--color-ivory);
+  --lo: var(--color-wood-900);
+  --fg: var(--color-ivory);
+}
+
+@utility btn-sm {
+  min-height: 2.25rem;
+  padding: calc(var(--px) + 1.5px) calc(var(--px) * 4) calc(var(--px) * 3);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--text-label--letter-spacing);
+  text-transform: uppercase;
+}
+
+@utility btn-lg {
+  padding: calc(var(--px) * 3 + 2px) calc(var(--px) * 10) calc(var(--px) * 5);
+}
+
+@utility input {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  padding: 6px 12px 6px;
+  border: var(--px) solid transparent;
+  border-image: var(--frame-notch) 1 / var(--px) / 0 stretch;
+  background: var(--color-ivory) padding-box;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.94rem;
+  box-shadow:
+    inset var(--px) var(--px) 0 0 var(--color-paper-line);
+  &::placeholder {
+    color: var(--color-ink-muted);
+  }
+  &[aria-invalid="true"] {
+    outline: var(--px) solid var(--color-ember-400);
+  }
+  &:focus-visible {
+    outline: var(--px) solid var(--focus);
+  }
+}
+
+@utility chip {
+  --chip-bg: var(--color-felt-700);
+  --chip-fg: var(--color-mist);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 2rem;
+  padding: 3px 8px 2px;
+  border: var(--px) solid transparent;
+  border-image: var(--frame-notch) 1 / var(--px) / 0 stretch;
+  background: var(--chip-bg) padding-box;
+  color: var(--chip-fg);
+  font-family: var(--font-display);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--text-label--letter-spacing);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@utility chip-gold {
+  --chip-bg: var(--color-gold-500);
+  --chip-fg: var(--color-ink);
+}
+
+@utility chip-ember {
+  --chip-bg: var(--color-ember-600);
+  --chip-fg: var(--color-ivory);
+}
+
+@utility chip-leaf {
+  --chip-bg: var(--color-leaf-400);
+  --chip-fg: var(--color-ink);
+}
+
+@utility chip-sky {
+  --chip-bg: var(--color-sky-300);
+  --chip-fg: var(--color-ink);
+}
+
+@utility label-px {
+  font-family: var(--font-display);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--text-label--letter-spacing);
+  text-transform: uppercase;
 }

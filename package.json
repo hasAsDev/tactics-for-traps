@@ -17,7 +17,8 @@
     "db:studio": "drizzle-kit studio",
     "auth:generate": "npx --yes auth@1.7.11 generate --config src/lib/auth.ts --output src/db/schema/auth.ts -y",
     "seed:demo": "tsx scripts/seed-demo.ts",
-    "admin:reset-password": "tsx scripts/admin-reset-password.ts"
+    "admin:reset-password": "tsx scripts/admin-reset-password.ts",
+    "art:preview": "tsx scripts/art-preview.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.10.1",

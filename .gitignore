@@ -45,3 +45,6 @@ next-env.d.ts
 
 # PGlite local database
 /.pglite/
+
+# art preview PNGs
+/.art-preview/
