@@ -41,6 +41,16 @@ describe("resolveDatabaseUrls", () => {
     expect(resolveDatabaseUrls({ DATABASE_URL_UNPOOLED: "direct" })).toMatchObject({ pooled: "direct", direct: "direct" });
   });
 
+  it("chỉ có chuỗi pooled của Neon thì bản direct bỏ -pooler khỏi host", () => {
+    const pooled = "postgresql://u:p@ep-cool-name-123456-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+    expect(resolveDatabaseUrls({ DATABASE_URL: pooled })).toEqual({
+      pooled,
+      direct: "postgresql://u:p@ep-cool-name-123456.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+      pooledName: "DATABASE_URL",
+      directName: "DATABASE_URL",
+    });
+  });
+
   it("bỏ qua biến rỗng và tên chỉ trùng một phần", () => {
     const env = { DATABASE_URL: "", POSTGRES_PRISMA_URL: "x", POSTGRES_URL_NO_SSL: "y", PGHOST: "h" };
     expect(resolveDatabaseUrls(env)).toEqual({});

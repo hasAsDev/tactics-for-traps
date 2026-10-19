@@ -10,8 +10,18 @@ const FAMILIES = [
 ];
 
 /**
+ * Host Neon qua PgBouncer có dạng ep-…-pooler.<vùng>…; bỏ "-pooler" là ra host kết nối thẳng.
+ * Migration cần kết nối thẳng vì khoá advisory theo session không dùng được qua PgBouncer.
+ * @param {string} url
+ */
+function withoutNeonPooler(url) {
+  return url.replace(/(@[^/?#]*?)-pooler\./, "$1.");
+}
+
+/**
  * Chọn cặp pooled/direct từ cùng một nguồn: ưu tiên tên không tiền tố, rồi tới các tiền tố theo
- * thứ tự chữ cái. Thiếu bản direct thì dùng bản pooled và ngược lại.
+ * thứ tự chữ cái. Thiếu bản direct thì suy ra từ bản pooled (bỏ "-pooler" nếu là host Neon),
+ * thiếu bản pooled thì dùng bản direct.
  * @param {Record<string, string | undefined>} [env]
  * @returns {{ pooled?: string; direct?: string; pooledName?: string; directName?: string }}
  */
@@ -30,7 +40,8 @@ export function resolveDatabaseUrls(env = process.env) {
       if (!pooledName && !directName) continue;
       const p = pooledName ?? directName;
       const d = directName ?? pooledName;
-      return { pooled: env[p], direct: env[d], pooledName: p, directName: d };
+      const directUrl = directName ? env[directName] : withoutNeonPooler(env[p] ?? "");
+      return { pooled: env[p], direct: directUrl, pooledName: p, directName: d };
     }
   }
   return {};

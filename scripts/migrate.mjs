@@ -46,8 +46,9 @@ function checkEnv() {
 
 checkEnv();
 
-const { direct: url, directName } = resolveDatabaseUrls();
-console.log(`[migrate] dùng ${directName}`);
+const { direct: url, pooled, directName, pooledName } = resolveDatabaseUrls();
+const derived = directName === pooledName && url !== pooled;
+console.log(`[migrate] dùng ${directName}${derived ? " (đổi sang host kết nối thẳng)" : ""}`);
 const LOCK_KEY = 727274; // khoá advisory cố định để hai bản build không migrate cùng lúc
 const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 20_000 });
 try {
