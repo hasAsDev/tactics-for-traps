@@ -19,36 +19,48 @@ interface Status {
   lastSyncAt: string | null;
 }
 
-/** Chip trạng thái + nút "Đồng bộ ngay"; trong lúc đồng bộ thì hỏi /api/sync/status mỗi 3 s. */
+const POLL_MS = 3000;
+const POLL_LIMIT_MS = 6 * 60_000;
+
+/**
+ * Chip trạng thái + nút "Đồng bộ ngay". Trong lúc chờ một lần đồng bộ (lần đầu sau khi kết nối,
+ * đang nhập lịch sử, hoặc vừa bấm nút) thì hỏi /api/sync/status mỗi 3 s; khi có lần đồng bộ mới
+ * hoàn tất thì tải lại dữ liệu trang.
+ */
 export function SyncControls({ username, lastSyncAt, importProgress }: SyncControlsProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
-  const [polling, setPolling] = useState(importProgress !== null);
+  const [polling, setPolling] = useState(importProgress !== null || lastSyncAt === null);
   const [status, setStatus] = useState<Status | null>(null);
-  const seenBusy = useRef(false);
+  const baseline = useRef<string | null>(lastSyncAt);
 
   useEffect(() => {
     if (!polling) return;
     let stop = false;
+    const startedAt = Date.now();
     const tick = async () => {
+      if (Date.now() - startedAt > POLL_LIMIT_MS) {
+        setPolling(false);
+        setMessage({ tone: "info", text: "Đồng bộ đang lâu hơn bình thường. Tải lại trang sau ít phút nhé." });
+        return;
+      }
       try {
         const res = await fetch(`/api/sync/status?u=${encodeURIComponent(username)}`, { cache: "no-store" });
         if (!res.ok) return;
         const next = (await res.json()) as Status;
         if (stop) return;
         setStatus(next);
-        if (next.syncing || next.importing) seenBusy.current = true;
-        if (!next.syncing && (seenBusy.current || !next.importing)) {
+        if (!next.syncing && next.lastSyncAt && next.lastSyncAt !== baseline.current) {
+          baseline.current = next.lastSyncAt;
           setPolling(false);
-          seenBusy.current = false;
           router.refresh();
         }
       } catch {
         // thử lại ở lần sau
       }
     };
-    const timer = window.setInterval(tick, 3000);
+    const timer = window.setInterval(tick, POLL_MS);
     void tick();
     return () => {
       stop = true;
@@ -58,6 +70,7 @@ export function SyncControls({ username, lastSyncAt, importProgress }: SyncContr
 
   const busy = pending || polling;
   const progress = status?.progress ?? importProgress;
+  const shownSyncAt = status?.lastSyncAt ?? lastSyncAt;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -69,10 +82,12 @@ export function SyncControls({ username, lastSyncAt, importProgress }: SyncContr
           ) : (
             "Đang đồng bộ…"
           )
-        ) : (
+        ) : shownSyncAt ? (
           <>
-            Đã đồng bộ <RelativeTime iso={status?.lastSyncAt ?? lastSyncAt} fallback="—" />
+            Đã đồng bộ <RelativeTime iso={shownSyncAt} />
           </>
+        ) : (
+          "Chưa đồng bộ"
         )}
       </span>
       <button
@@ -85,7 +100,7 @@ export function SyncControls({ username, lastSyncAt, importProgress }: SyncContr
             setMessage(null);
             const result = await syncNow();
             if (result.ok) {
-              seenBusy.current = false;
+              baseline.current = status?.lastSyncAt ?? lastSyncAt;
               setPolling(true);
             } else {
               setMessage({ tone: "error", text: result.error });
