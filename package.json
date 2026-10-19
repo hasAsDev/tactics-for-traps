@@ -4,23 +4,51 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/migrate.mjs && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:int": "vitest run --config vitest.int.config.mts",
+    "db:up": "node scripts/dev-db.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "auth:generate": "npx --yes auth@1.7.11 generate --config src/lib/auth.ts --output src/db/schema/auth.ts -y",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "admin:reset-password": "tsx scripts/admin-reset-password.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.10.1",
+    "better-auth": "^1.7.11",
+    "drizzle-orm": "^0.45.4",
     "next": "16.4.2",
+    "pg": "^8.23.1",
+    "phaser": "^4.2.1",
+    "pixelarticons": "^2.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "^0.2.13",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22.12 <23"
   }
 }
