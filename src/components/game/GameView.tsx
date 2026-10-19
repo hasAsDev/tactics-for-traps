@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Metric } from "@/game/core/intensity";
 import { boardSize } from "@/game/art/iso";
 import type { BoardDTO, WorldHandle } from "@/game/world";
@@ -11,10 +11,12 @@ interface GameViewProps {
   selected: number | null;
   onHover?: (index: number | null, at: { x: number; y: number } | null) => void;
   onSelect?: (index: number) => void;
-  /** Gọi khi zoom (CSS px trên mỗi điểm ảnh art) thay đổi, để đặt tooltip. */
+  /** Gọi khi zoom (CSS px trên mỗi điểm ảnh art) thay đổi. */
   onZoom?: (zoom: number) => void;
   /** Không tạo được WebGL: cha nên hiện lưới phẳng thay thế. */
   onFail?: () => void;
+  /** Lớp phủ (tooltip…) đặt trong khung đúng bằng canvas; toạ độ art × zoom. */
+  children?: ReactNode;
 }
 
 /** Phóng theo số nguyên điểm ảnh thiết bị: mỗi điểm ảnh art phủ đúng n điểm ảnh màn hình. */
@@ -25,12 +27,14 @@ function computeZoom(cssWidth: number, artWidth: number): number {
 }
 
 /** Khung chứa thế giới Phaser. Phaser chỉ được nạp ở client, bằng import động. */
-export function GameView({ board, metric, selected, onHover, onSelect, onZoom, onFail }: GameViewProps) {
+export function GameView({ board, metric, selected, onHover, onSelect, onZoom, onFail, children }: GameViewProps) {
+  const outerRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<WorldHandle | null>(null);
   const callbacks = useRef({ onHover, onSelect, onZoom, onFail });
   const latest = useRef({ board, metric, selected });
   const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
   const art = boardSize(board.weeks);
 
   useEffect(() => {
@@ -43,18 +47,24 @@ export function GameView({ board, metric, selected, onHover, onSelect, onZoom, o
   }, [board, metric, selected]);
 
   useEffect(() => {
+    const outer = outerRef.current;
     const host = hostRef.current;
-    if (!host) return;
+    if (!outer || !host) return;
     let dead = false;
     let handle: WorldHandle | null = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const width = () => host.parentElement?.clientWidth ?? host.clientWidth;
+    const measure = () => computeZoom(outer.clientWidth, boardSize(latest.current.board.weeks).w);
+
+    const applyZoom = (value: number) => {
+      setZoom(value);
+      callbacks.current.onZoom?.(value);
+      handleRef.current?.setZoom(value);
+    };
+    applyZoom(measure());
 
     import("@/game/phaser/createWorld")
       .then(({ createWorld }) => {
         if (dead) return;
-        const zoom = computeZoom(width(), boardSize(latest.current.board.weeks).w);
-        callbacks.current.onZoom?.(zoom);
         handle = createWorld(
           host,
           { ...latest.current, reducedMotion },
@@ -63,7 +73,7 @@ export function GameView({ board, metric, selected, onHover, onSelect, onZoom, o
             select: (i) => callbacks.current.onSelect?.(i),
             ready: () => !dead && setReady(true),
           },
-          zoom,
+          measure(),
         );
         handleRef.current = handle;
       })
@@ -71,37 +81,42 @@ export function GameView({ board, metric, selected, onHover, onSelect, onZoom, o
         if (!dead) callbacks.current.onFail?.();
       });
 
-    const resize = new ResizeObserver(() => {
-      if (!handleRef.current) return;
-      const zoom = computeZoom(width(), boardSize(latest.current.board.weeks).w);
-      handleRef.current.setZoom(zoom);
-      callbacks.current.onZoom?.(zoom);
-    });
-    resize.observe(host.parentElement ?? host);
+    const resize = new ResizeObserver(() => applyZoom(measure()));
+    resize.observe(outer);
+    const dpr = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    const onDpr = () => applyZoom(measure());
+    dpr.addEventListener("change", onDpr);
 
     const visibility = new IntersectionObserver(([entry]) => {
       if (entry?.isIntersecting) handleRef.current?.wake();
       else handleRef.current?.sleep();
     });
-    visibility.observe(host);
+    visibility.observe(outer);
 
     return () => {
       dead = true;
       resize.disconnect();
       visibility.disconnect();
+      dpr.removeEventListener("change", onDpr);
       handle?.destroy();
       handleRef.current = null;
     };
   }, []);
 
   return (
-    <div className="relative" style={{ aspectRatio: `${art.w} / ${art.h}` }}>
-      {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
-          <span className="label-px animate-pulse text-mist">Đang xếp quân…</span>
-        </div>
-      )}
-      <div ref={hostRef} aria-hidden className="absolute inset-0 flex justify-center [&_canvas]:touch-pan-y" />
+    <div ref={outerRef} className="w-full">
+      <div
+        className="relative mx-auto"
+        style={zoom ? { width: art.w * zoom, height: art.h * zoom } : { width: "100%", aspectRatio: `${art.w} / ${art.h}` }}
+      >
+        {!ready && (
+          <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
+            <span className="label-px animate-pulse text-mist">Đang xếp quân…</span>
+          </div>
+        )}
+        <div ref={hostRef} aria-hidden className="absolute inset-0 [&_canvas]:touch-pan-y" />
+        {ready && children}
+      </div>
     </div>
   );
 }

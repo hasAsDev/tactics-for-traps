@@ -144,26 +144,27 @@ export function HeatmapPanel({ board, todayIso }: HeatmapPanelProps) {
               onSelect={(i) => setSelected(i + offset)}
               onZoom={setZoom}
               onFail={() => setFailed(true)}
-            />
-            {tip && hover && wide && (
-              <div
-                className="panel-paper pointer-events-none absolute z-10 w-64 -translate-x-1/2 -translate-y-full p-2"
-                style={{ left: hover.at.x * zoom, top: hover.at.y * zoom }}
-                role="tooltip"
-              >
-                <p className="label-px text-ink-muted">{tip.title}</p>
-                <p className="text-body">{bigValue(board, hover.index, metric)}</p>
-                {tip.empty ? (
-                  <p className="text-body-sm text-ink-muted">Không có hoạt động</p>
-                ) : (
-                  tip.lines.map((l) => (
-                    <p key={l} className="text-body-sm">
-                      {l}
-                    </p>
-                  ))
-                )}
-              </div>
-            )}
+            >
+              {tip && hover && wide && (
+                <div
+                  className="panel-paper pointer-events-none absolute z-10 w-64 -translate-x-1/2 -translate-y-full p-2"
+                  style={{ left: hover.at.x * zoom, top: Math.max(0, hover.at.y * zoom) }}
+                  role="tooltip"
+                >
+                  <p className="label-px text-ink-muted">{tip.title}</p>
+                  <p className="text-body">{bigValue(board, hover.index, metric)}</p>
+                  {tip.empty ? (
+                    <p className="text-body-sm text-ink-muted">Không có hoạt động</p>
+                  ) : (
+                    tip.lines.map((l) => (
+                      <p key={l} className="text-body-sm">
+                        {l}
+                      </p>
+                    ))
+                  )}
+                </div>
+              )}
+            </GameView>
             <YearGrid
               board={board}
               levels={levels}
