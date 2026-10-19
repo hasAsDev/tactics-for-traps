@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { resolveDatabaseUrls } from "./src/db/url.mjs";
 
 // Local: đọc .env.local. Trên Vercel/CI biến môi trường đã có sẵn.
 try {
@@ -7,7 +8,7 @@ try {
   // không có .env.local
 }
 
-const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+const url = resolveDatabaseUrls().direct;
 if (!url) throw new Error("Thiếu DATABASE_URL_UNPOOLED / DATABASE_URL");
 
 export default defineConfig({

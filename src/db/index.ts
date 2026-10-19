@@ -2,6 +2,7 @@ import { attachDatabasePool } from "@vercel/functions";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool, types } from "pg";
 import * as schema from "./schema";
+import { resolveDatabaseUrls } from "./url.mjs";
 
 // Cột DATE trả về chuỗi "YYYY-MM-DD" thay vì Date theo giờ máy (tránh lệch ngày).
 types.setTypeParser(types.builtins.DATE, (value: string) => value);
@@ -12,7 +13,7 @@ const globalForDb = globalThis as unknown as { __tftPool?: Pool };
 
 function createPool(): Pool {
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: resolveDatabaseUrls().pooled,
     max: 5,
     idleTimeoutMillis: 5_000,
     connectionTimeoutMillis: 15_000,

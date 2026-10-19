@@ -3,6 +3,7 @@
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { databaseEnvNames, resolveDatabaseUrls } from "../src/db/url.mjs";
 
 if (process.env.VERCEL_ENV !== "production") {
   console.log("[migrate] bỏ qua (VERCEL_ENV khác production)");
@@ -13,9 +14,15 @@ if (process.env.VERCEL_ENV !== "production") {
 function checkEnv() {
   const env = process.env;
   const problems = [];
-  if (!env.DATABASE_URL_UNPOOLED && !env.DATABASE_URL) {
+  if (!resolveDatabaseUrls(env).direct) {
+    // Chỉ in tên biến, không in giá trị.
+    const seen = databaseEnvNames(env);
     problems.push(
-      "DATABASE_URL: chưa có database. Vào tab Storage của project → Create Database → Neon, kết nối với môi trường Production.",
+      "DATABASE_URL: bản build Production không thấy connection string Postgres nào " +
+        "(đã tìm DATABASE_URL, DATABASE_URL_UNPOOLED, POSTGRES_URL và các tên đó có tiền tố).\n" +
+        `    Biến liên quan tới database mà build thấy: ${seen.length > 0 ? seen.join(", ") : "(không có)"}\n` +
+        "    Cách sửa: Storage → database Neon → Connect Project → chọn project này, tick Production → Connect.\n" +
+        "    Nếu tạo database bên console Neon: tự thêm DATABASE_URL (Settings → Environment Variables, môi trường Production).",
     );
   }
   if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {
@@ -39,7 +46,8 @@ function checkEnv() {
 
 checkEnv();
 
-const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+const { direct: url, directName } = resolveDatabaseUrls();
+console.log(`[migrate] dùng ${directName}`);
 const LOCK_KEY = 727274; // khoá advisory cố định để hai bản build không migrate cùng lúc
 const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 20_000 });
 try {

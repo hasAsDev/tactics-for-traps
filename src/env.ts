@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveDatabaseUrls } from "./db/url.mjs";
 
 // Biến môi trường phía server, kiểm tra lúc dùng lần đầu (không kiểm tra lúc import,
 // để `next build` và CLI của Better Auth không vỡ khi thiếu biến).
@@ -19,7 +20,8 @@ let cached: ServerEnv | undefined;
 
 export function serverEnv(): ServerEnv {
   if (!cached) {
-    const parsed = serverSchema.safeParse(process.env);
+    // DATABASE_URL có thể đến từ tên khác (POSTGRES_URL, tiền tố của Neon), xem db/url.mjs.
+    const parsed = serverSchema.safeParse({ ...process.env, DATABASE_URL: resolveDatabaseUrls().pooled });
     if (!parsed.success) {
       const keys = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
       throw new Error(`Biến môi trường không hợp lệ hoặc bị thiếu: ${keys}`);
